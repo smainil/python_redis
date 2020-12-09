@@ -1,0 +1,42 @@
+version: '3'
+services:
+  traefik:
+    image: traefik:maroilles
+    command: --web --docker --docker.domain=docker.localhost
+    ports:
+      - 80:80
+      - 8080:8080
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/null:/traefik.toml
+    networks:
+      - traefik_net
+
+  python:
+    image: localhost:5000/python_redis_python
+    environment:
+      - FLASK_ENV=development
+    deploy:
+      replicas: 3
+    networks:
+      - traefik_net
+    labels:
+      - "traefik.docker.network=traefik"
+      - "traefik.backend=smainil"
+      - "traefik.frontend.rule=Host:smainil.localhost"
+      - "traefik.port=80"
+
+  redis:
+    image: redis:4.0.11-alpine
+    volumes:
+      - ~/python_redis/data:/data
+    networks:
+      - traefik_net
+
+networks:
+  traefik_net:
+    driver: bridge
+
+  redis_net:
+    driver: bridge
